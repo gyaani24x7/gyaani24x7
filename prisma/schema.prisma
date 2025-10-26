@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String?
+  email        String?       @unique
+  coins        Int           @default(100)
+  quizzes      Quiz[]
+  quizAttempts QuizAttempt[]
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  Content      Content[]
+  QuizConfig   QuizConfig[]
+}
+
+model Content {
+  id          String       @id @default(cuid())
+  user        User         @relation(fields: [userId], references: [id])
+  userId      String
+  title       String?
+  type        String
+  contentText String
+  createdAt   DateTime     @default(now())
+  QuizConfig  QuizConfig[]
+}
+
+model QuizConfig {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  content         Content  @relation(fields: [contentId], references: [id])
+  contentId       String
+  numQuestions    Int
+  difficulty      String
+  timePerQuestion Int
+  priceInCoins    Int
+  createdAt       DateTime @default(now())
+  Quiz            Quiz[]
+}
+
+model Quiz {
+  id          String        @id @default(cuid())
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  config      QuizConfig    @relation(fields: [configId], references: [id])
+  configId    String
+  questions   Json // array of { questionText, options[], correctAnswer, explanation }
+  createdAt   DateTime      @default(now())
+  QuizAttempt QuizAttempt[]
+}
+
+model QuizAttempt {
+  id                   String   @id @default(cuid())
+  user                 User     @relation(fields: [userId], references: [id])
+  userId               String
+  quiz                 Quiz     @relation(fields: [quizId], references: [id])
+  quizId               String
+  answers              Json // e.g. [{ qId, answer, confidentSwipe }]
+  earnedCoins          Int
+  confidenceSwipesUsed Int
+  totalAllowedSwipes   Int
+  completed            Boolean  @default(false)
+  createdAt            DateTime @default(now())
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  type        String
+  amount      Int
+  description String
+  createdAt   DateTime @default(now())
+}
